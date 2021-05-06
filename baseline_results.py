@@ -57,16 +57,20 @@ data=data.dropna()
 data['target'] = labelencoder.fit_transform(data['Genre'])
 
 integer_mapping = {l: i for i, l in enumerate(labelencoder.classes_)}
-print(integer_mapping)
+
 
 y = data['target']
 
-
+"""
 # Drop the Activity time for now + target labels
 X = data.drop('ActivityTime',1)
 X_2= X.drop('Genre',1)
 X_3 = X_2.drop('target',1)
+"""
 
+#Keeping activity time
+X=data.drop('Genre',1)
+X_3 = X.drop('target',1)
 
 #Scale features
 scaler=StandardScaler()
@@ -85,6 +89,7 @@ logisticRegr.fit(x_train, y_train)
 predictions = logisticRegr.predict(x_test)
 
 print("LOGISTIC REGRESSION RESULTS")
+print(integer_mapping)
 display_results(y_test,predictions)
 
 
@@ -102,6 +107,7 @@ clf.fit(x_train, y_train)
 y_pred = clf.predict(x_test)
 
 print("SVM RESULTS")
+print(integer_mapping)
 display_results(y_test,y_pred)
 
 
@@ -119,6 +125,7 @@ clf.fit(x_train,y_train)
 y_pred=clf.predict(x_test)
 
 print("RANDOM FOREST RESULTS")
+print(integer_mapping)
 display_results(y_test,y_pred)
 
 
@@ -131,6 +138,7 @@ display_results(y_test,y_pred)
 clf = MLPClassifier(random_state=1, max_iter=1000).fit(x_train, y_train)
 y_pred = clf.predict(x_test)
 print("MLP RESULTS")
+print(integer_mapping)
 display_results(y_test,y_pred)
 
 
@@ -146,6 +154,7 @@ model = adaboost.fit(x_train, y_train)
 y_pred = model.predict(x_test)
 
 print("ADABOOST RESULTS")
+print(integer_mapping)
 display_results(y_test,y_pred)
 
 
@@ -159,6 +168,7 @@ clf = clf.fit(x_train,y_train)
 y_pred = clf.predict(x_test)
 
 print("DECISION TREE RESULTS")
+print(integer_mapping)
 display_results(y_test,y_pred)
 
 
