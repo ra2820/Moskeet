@@ -4,7 +4,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import balanced_accuracy_score, precision_recall_fscore_support,classification_report,mean_squared_error
+from sklearn.metrics import balanced_accuracy_score, precision_recall_fscore_support,classification_report,mean_squared_error,accuracy_score
 from sklearn import svm
 from sklearn.metrics import confusion_matrix
 import seaborn as sns
@@ -17,12 +17,14 @@ from sklearn.model_selection import GridSearchCV
 
 
 
-data = pd.read_csv('./7_AMCA_Cleaned.csv')
+#data = pd.read_csv('./7_AMCA_Cleaned.csv')
 #data = pd.read_csv('./Culex_features.csv')
+data = pd.read_csv('./Entire_data.csv')
 
 
 def display_results(y_test,y_pred): 
-  accuracy = balanced_accuracy_score(y_test,y_pred)
+  #accuracy = balanced_accuracy_score(y_test,y_pred)
+  accuracy = accuracy_score(y_test,y_pred)
   report = classification_report(y_test,y_pred,zero_division=0)
   error = mean_squared_error(y_test,y_pred)
   cm = confusion_matrix(y_test, predictions)
