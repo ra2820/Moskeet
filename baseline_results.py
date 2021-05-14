@@ -19,12 +19,17 @@ from sklearn.model_selection import GridSearchCV
 
 #data = pd.read_csv('./7_AMCA_Cleaned.csv')
 #data = pd.read_csv('./Culex_features.csv')
-data = pd.read_csv('./Entire_data.csv')
+#data = pd.read_csv('./Entire_data.csv')
+data = pd.read_csv('./All_features.csv')
+#data = pd.read_csv('./All_features_limited2.csv')
 
 
+# displays performance of classifier 
+# input : test labels (y_test), predicted labels (y_pred)
+# output : accuracy, precision, recall, f1, MSE, confusion matrix
 def display_results(y_test,y_pred): 
-  #accuracy = balanced_accuracy_score(y_test,y_pred)
-  accuracy = accuracy_score(y_test,y_pred)
+  accuracy = balanced_accuracy_score(y_test,y_pred)
+  #accuracy = accuracy_score(y_test,y_pred)
   report = classification_report(y_test,y_pred,zero_division=0)
   error = mean_squared_error(y_test,y_pred)
   cm = confusion_matrix(y_test, predictions)
@@ -46,9 +51,6 @@ def display_results(y_test,y_pred):
   y_axis_labels = list(labelencoder.classes_) # labels for y-axis
 
   sns.heatmap(cm, xticklabels = x_axis_labels, yticklabels = y_axis_labels, annot=True,fmt='g')
-
-
-
 
 
 # Cleaning the data 
@@ -85,7 +87,7 @@ scaled_dataframe = pd.DataFrame(scaled_data,columns=X_3.columns)
 x_train, x_test, y_train, y_test = train_test_split(scaled_dataframe, y, test_size=0.25, random_state=0)
 
 
-#Logistic Regression
+##### Logistic Regression #####
 logisticRegr = LogisticRegression(max_iter=300)
 logisticRegr.fit(x_train, y_train)
 predictions = logisticRegr.predict(x_test)
@@ -95,9 +97,7 @@ print(integer_mapping)
 display_results(y_test,predictions)
 
 
-
-
-#SVM 
+##### SVM #####
 
 #Create svm Classifier
 clf = svm.SVC(kernel='rbf')
@@ -114,11 +114,7 @@ display_results(y_test,y_pred)
 
 
 
-
-
-
-
-# Random forest 
+##### Random forest ##### 
 
 clf=RandomForestClassifier(n_estimators=100)
 
@@ -131,11 +127,7 @@ print(integer_mapping)
 display_results(y_test,y_pred)
 
 
-
-
-
-
-# MLP 
+##### MLP #####
 
 clf = MLPClassifier(random_state=1, max_iter=1000).fit(x_train, y_train)
 y_pred = clf.predict(x_test)
@@ -145,10 +137,7 @@ display_results(y_test,y_pred)
 
 
 
-
-
-
-#AdaBoost Classifier
+##### AdaBoost Classifier #####
 
 adaboost = AdaBoostClassifier(n_estimators=50,
                          learning_rate=1)
@@ -160,10 +149,7 @@ print(integer_mapping)
 display_results(y_test,y_pred)
 
 
-
-
-
-#Decision Tree
+##### Decision Tree #####
 clf = DecisionTreeClassifier()
 
 clf = clf.fit(x_train,y_train)
@@ -172,8 +158,6 @@ y_pred = clf.predict(x_test)
 print("DECISION TREE RESULTS")
 print(integer_mapping)
 display_results(y_test,y_pred)
-
-
 
 
 
