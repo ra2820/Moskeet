@@ -3,6 +3,7 @@ import torch.optim as optim
 import matplotlib.pyplot as plt 
 
 from sklearn.metrics import balanced_accuracy_score
+from torch.optim.optimizer import Optimizer
 
 import dataloader_mbn
 
@@ -43,13 +44,14 @@ print(net)
 
 # hyperparameters 
 batch_size = 100
-lr = 0.001
+lr = 0.0002
 
 params = list(net.parameters())
 
 
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+#optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9) #change to Adam
+optimizer = optim.Adam(net.parameters(),lr=lr)
 
 
 
@@ -74,36 +76,45 @@ else:
 def check_accuracy(loader, model):
     # function for test accuracy on validation and test set
 
-    num_correct = 0
-    num_samples = 0
-    model.eval()  # set model to evaluation mode
+    correct = 0
+    total = 0
+    model.eval()  # set model to evaluation mode 
     with torch.no_grad():
         for batch in loader:
+            print('Calculating accuracy on validation batch ...')
             inputs, labels = batch['channel_arrays'],batch['species']
-            inputs = inputs.reshape(5284,1,2,2000)
-            print(inputs)
+
+            if inputs.shape == (100,2,2000): 
+                inputs = inputs.reshape(100,1,2,2000)
+            
+            else: 
+                inputs = inputs.reshape(82,1,2,2000)
+
+            #print(inputs)
+
             labels = torch.flatten(labels)
             labels = labels.type(torch.LongTensor)
-            outputs_val = model(inputs)
-            print(outputs_val)
+            outputs_val = net(inputs)
+            #print(outputs_val)
+
             _, predicted = torch.max(outputs_val.data, 1)
             #print(predicted)
             #print(labels)
-            num_correct += (predicted == labels).sum().item()
-            num_samples += predicted.size(0)
-        acc = float(num_correct) / num_samples
-        print('Got %d / %d correct (%.2f)' % (num_correct, num_samples, 100 * acc))
+            correct += (predicted == labels).sum().item()
+            total += labels.size(0)
+    acc = float(correct) / total
+    print('Got %d / %d correct (%.2f)' % (correct, total, 100 * acc))
 
 
 
 
 
 
+epochs_data_final= {'epoch':[], 'epoch_i_batch':[], 'epoch_loss':[], 'epoch_accuracy':[]}
 
 
 
-
-for epoch in range(1):  # loop over the dataset multiple times
+for epoch in range(10):  # loop over the dataset multiple times
 
     epochs_data={'i_batch':[],'loss':[],'accuracy':[]}
 
@@ -149,9 +160,20 @@ for epoch in range(1):  # loop over the dataset multiple times
             epochs_data['accuracy'].append(accuracy)
              
             running_loss = 0.0
+    
+    epochs_data_final['epoch'].append(epoch)
+    epochs_data_final['epoch_i_batch'].append(epochs_data['i_batch'])
+    epochs_data_final['epoch_loss'].append(epochs_data['loss'])
+    epochs_data_final['epoch_accuracy'].append(epochs_data['accuracy'])
+
+    if epoch % 5 ==4: 
+        check_accuracy(dataloader_mbn.dataloader_val,net)
+   
+
+
        
 print('Finished Training')
-
+print(epochs_data_final)
 
 plt.plot(epochs_data['i_batch'],epochs_data['loss'])
 plt.title('1 Epoch - Loss vs. batches')
