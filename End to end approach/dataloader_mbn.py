@@ -347,10 +347,7 @@ class MBN(Dataset):
     def __getitem__(self, idx):
 
         file_path = self.mbn_files_data['Path'][idx]
-        #data = open(str(file_path), "rb").read()
-        #mbn_numpy = np.frombuffer(data, dtype=np.float) #dtype = np.uint16 or float
-        #S = np.abs(librosa.stft(mbn_numpy, n_fft=2048, hop_length=128))
-        #log_S= librosa.amplitude_to_db(S)
+        
         MBN.MbnFile(file_path)
         wav1_file_name = os.path.basename(file_path)[:8]+'_Ch0'+'.wav'
         wav2_file_name = os.path.basename(file_path)[:8]+'_Ch1'+'.wav'
@@ -396,7 +393,7 @@ class MBN(Dataset):
         
         species = self.mbn_files_data['Species'][idx]
         #print(species)
-        species_encoded = integer_encoded[idx]
+        species_encoded = MBN.integer_encoded[idx]
         #print(species_encoded)
         set = self.mbn_files_data['Set'][idx]
         #print(trimmed_y)
@@ -412,24 +409,7 @@ mbn_dataset = MBN(csv_file_path='C:\\Users\\roopa\\OneDrive\\Desktop\\MOSKEET\\E
 
 
 mbn_files_data = pd.read_csv('C:\\Users\\roopa\\OneDrive\\Desktop\\MOSKEET\\Entire_data_final\\combined_split_csv.csv')
-species = mbn_files_data['Species']
-values = np.array(species)
-#print(values)
-# integer encode
-label_encoder = LabelEncoder()
-integer_encoded = label_encoder.fit_transform(values)
-#print(integer_encoded)
-# binary encode
-onehot_encoder = OneHotEncoder(sparse=False)
-integer_encoded = integer_encoded.reshape(len(integer_encoded), 1)
-onehot_encoded = onehot_encoder.fit_transform(integer_encoded)
 
-
-
-sample = mbn_dataset[20000]
-#print(sample['channel_arrays'])
-#print(sample['channel_arrays'].shape)
-#print(sample['species'])
 
 df = pd.read_csv('C:\\Users\\roopa\\OneDrive\\Desktop\\MOSKEET\\Entire_data_final\\combined_split_csv.csv')
 
