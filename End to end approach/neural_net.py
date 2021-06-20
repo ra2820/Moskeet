@@ -1,10 +1,4 @@
 
-import torch.optim as optim
-import matplotlib.pyplot as plt 
-
-from sklearn.metrics import balanced_accuracy_score
-from torch.optim.optimizer import Optimizer
-
 import dataloader_mbn
 
 
@@ -12,6 +6,16 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+import torch.optim as optim
+import matplotlib.pyplot as plt 
+
+from sklearn.metrics import balanced_accuracy_score,confusion_matrix
+from torch.optim.optimizer import Optimizer
+import numpy as np
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
 class Net(nn.Module):
 
@@ -58,7 +62,6 @@ optimizer = optim.Adam(net.parameters(),lr=lr)
 
 
 
-
 USE_GPU = True
 dtype = torch.float32 
 
@@ -73,12 +76,16 @@ else:
 
 
 
+val_accuracies = []
+
 def check_accuracy(loader, model):
     # function for test accuracy on validation and test set
 
     correct = 0
     total = 0
     model.eval()  # set model to evaluation mode 
+    labels_list=[]
+    predicted_list=[]
     with torch.no_grad():
         for batch in loader:
             print('Calculating accuracy on validation batch ...')
@@ -102,7 +109,17 @@ def check_accuracy(loader, model):
             #print(labels)
             correct += (predicted == labels).sum().item()
             total += labels.size(0)
+
+            for item in predicted.squeeze().tolist(): 
+              predicted_list.append(item)
+            for item in labels.squeeze().tolist(): 
+              labels_list.append(item)
+            
     acc = float(correct) / total
+    val_accuracies.append(acc)
+    #bal_acc = balanced_accuracy_score(y_test,y_pred)
+    cm = confusion_matrix(np.array(labels_list), np.array(predicted_list))
+    print(cm)
     print('Got %d / %d correct (%.2f)' % (correct, total, 100 * acc))
 
 
@@ -110,6 +127,88 @@ def check_accuracy(loader, model):
 
 
 
+
+
+##### TRAINING ####
+epochs_data_final= {'epoch':[], 'epoch_i_batch':[], 'epoch_loss':[], 'epoch_accuracy':[]}
+
+
+
+for epoch in range(10):  # loop over the dataset multiple times
+
+    epochs_data={'i_batch':[],'loss':[],'accuracy':[]}
+
+    running_loss = 0.0
+
+    for i_batch, sample_batch in enumerate(dataloader_mbn.dataloader_train,0):
+ 
+        inputs, labels = sample_batch['channel_arrays'],sample_batch['species']
+
+     
+        optimizer.zero_grad()
+
+        if inputs.shape == (100,2,2000): 
+            inputs = inputs.reshape(100,1,2,2000)
+        
+        else: 
+            inputs = inputs.reshape(56,1,2,2000)
+
+        outputs = net(inputs)
+    
+        labels = torch.flatten(labels)
+        labels = labels.type(torch.LongTensor)
+
+        loss = criterion(outputs, labels)
+        loss.backward()
+
+        optimizer.step()
+
+        running_loss += loss.item()
+ 
+        if i_batch % 10 == 9:    
+           
+            _, predicted = torch.max(outputs.data, 1)   
+         
+            accuracy = balanced_accuracy_score(labels.detach().numpy(),predicted.detach().numpy())
+            
+
+            print('[%d, %5d] loss: %.3f accuracy: %.3f' %
+                  (epoch + 1, i_batch + 1, running_loss / 10, accuracy))
+            
+            epochs_data['i_batch'].append(i_batch+1)
+            epochs_data['loss'].append(running_loss/10)
+            epochs_data['accuracy'].append(accuracy)
+             
+            running_loss = 0.0
+    
+    epochs_data_final['epoch'].append(epoch)
+    epochs_data_final['epoch_i_batch'].append(epochs_data['i_batch'])
+    epochs_data_final['epoch_loss'].append(epochs_data['loss'])
+    epochs_data_final['epoch_accuracy'].append(epochs_data['accuracy'])
+
+    if epoch % 1 ==0: 
+        check_accuracy(dataloader_mbn.dataloader_val,net)
+   
+
+
+       
+print('Finished Training')
+print(epochs_data_final)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""
 epochs_data_final= {'epoch':[], 'epoch_i_batch':[], 'epoch_loss':[], 'epoch_accuracy':[]}
 
 
@@ -171,6 +270,10 @@ for epoch in range(10):  # loop over the dataset multiple times
    
 
 
+
+
+
+
        
 print('Finished Training')
 print(epochs_data_final)
@@ -187,3 +290,4 @@ plt.xlabel('Batch number')
 plt.ylabel('accuracy')
 plt.show()
 
+"""

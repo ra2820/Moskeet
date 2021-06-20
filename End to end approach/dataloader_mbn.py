@@ -15,6 +15,9 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import LabelEncoder
 
 
+
+
+
 IMEI = 0
 dataPath =''
 ProductID = 0
@@ -128,14 +131,6 @@ def fillHeader():
 
 
 
-
-
-
-
-
-
-
-
 class MBN(Dataset):
     """MBN dataset."""
 
@@ -151,13 +146,9 @@ class MBN(Dataset):
         #print(values)
         # integer encode
         label_encoder = LabelEncoder()
-        integer_encoded = label_encoder.fit_transform(values)
+        self.integer_encoded = label_encoder.fit_transform(values)
         #print(integer_encoded)
-        # binary encode
-        onehot_encoder = OneHotEncoder(sparse=False)
-        integer_encoded = integer_encoded.reshape(len(integer_encoded), 1)
-        onehot_encoded = onehot_encoder.fit_transform(integer_encoded)
-        #print(onehot_encoded)
+        
         
 
     def __len__(self):
@@ -346,9 +337,9 @@ class MBN(Dataset):
 
     def __getitem__(self, idx):
 
-        file_path = self.mbn_files_data['Path'][idx]
-        
-        MBN.MbnFile(file_path)
+        file_path = self.mbn_files_data['NewPath_vol2'][idx]
+       
+        #MBN.MbnFile(file_path)
         wav1_file_name = os.path.basename(file_path)[:8]+'_Ch0'+'.wav'
         wav2_file_name = os.path.basename(file_path)[:8]+'_Ch1'+'.wav'
         wav1_path = os.path.join(os.path.split(file_path)[0],wav1_file_name)
@@ -393,7 +384,7 @@ class MBN(Dataset):
         
         species = self.mbn_files_data['Species'][idx]
         #print(species)
-        species_encoded = MBN.integer_encoded[idx]
+        species_encoded = self.integer_encoded[idx]
         #print(species_encoded)
         set = self.mbn_files_data['Set'][idx]
         #print(trimmed_y)
@@ -404,14 +395,13 @@ class MBN(Dataset):
 
         return sample
 
-mbn_dataset = MBN(csv_file_path='C:\\Users\\roopa\\OneDrive\\Desktop\\MOSKEET\\Entire_data_final\\combined_split_csv.csv')
 
 
 
-mbn_files_data = pd.read_csv('C:\\Users\\roopa\\OneDrive\\Desktop\\MOSKEET\\Entire_data_final\\combined_split_csv.csv')
+mbn_dataset = MBN(csv_file_path='/vol/bitbucket/ra2820/BITBUCKET/combined_split_vol.csv')
 
 
-df = pd.read_csv('C:\\Users\\roopa\\OneDrive\\Desktop\\MOSKEET\\Entire_data_final\\combined_split_csv.csv')
+df = pd.read_csv('/vol/bitbucket/ra2820/BITBUCKET/combined_split_vol.csv')
 
 index = df.index
 condition_train = df["Set"] == "train"
@@ -430,3 +420,8 @@ valid_sampler = SubsetRandomSampler(val_indices)
 dataloader_train = DataLoader(mbn_dataset, batch_size=100,sampler = train_sampler,num_workers=0)
 dataloader_test = DataLoader(mbn_dataset, batch_size=100,sampler = test_sampler, num_workers=0)
 dataloader_val = DataLoader(mbn_dataset, batch_size=100,sampler = valid_sampler, num_workers=0)
+
+
+
+
+
