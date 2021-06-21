@@ -20,7 +20,8 @@ from sklearn.model_selection import GridSearchCV
 #data = pd.read_csv('./7_AMCA_Cleaned.csv')
 #data = pd.read_csv('./Culex_features.csv')
 #data = pd.read_csv('./Entire_data.csv')
-data = pd.read_csv('./All_features.csv')
+#data = pd.read_csv('./All_features.csv')
+data = pd.read_csv('./combined_features_csv2')
 #data = pd.read_csv('./All_features_limited2.csv')
 
 
@@ -53,6 +54,7 @@ def display_results(y_test,y_pred):
   sns.heatmap(cm, xticklabels = x_axis_labels, yticklabels = y_axis_labels, annot=True,fmt='g')
 
 
+"""
 # Cleaning the data 
 
 #Transform labels
@@ -65,12 +67,12 @@ integer_mapping = {l: i for i, l in enumerate(labelencoder.classes_)}
 
 y = data['target']
 
-"""
+
 # Drop the Activity time for now + target labels
 X = data.drop('ActivityTime',1)
 X_2= X.drop('Genre',1)
 X_3 = X_2.drop('target',1)
-"""
+
 
 #Keeping activity time
 X=data.drop('Genre',1)
@@ -85,6 +87,71 @@ scaled_dataframe = pd.DataFrame(scaled_data,columns=X_3.columns)
 
 # 75-25 train vs test split
 x_train, x_test, y_train, y_test = train_test_split(scaled_dataframe, y, test_size=0.25, random_state=0)
+"""
+
+
+##### Cleanin data with stratified splits###
+
+#Transform labels
+labelencoder = LabelEncoder()
+data=data.dropna()
+data['target'] = labelencoder.fit_transform(data['speciesname'])
+
+integer_mapping = {l: i for i, l in enumerate(labelencoder.classes_)}
+
+
+y = data['target']
+
+
+#Keeping activity time
+X=data.drop('speciesname',1)
+X= X.drop('Genre',1)
+X= X.drop('mbn_name',1)
+X = X.drop('target',1)
+
+
+index = X.index
+condition_train = X["Set"] == "train"
+condition_test = X["Set"] == "test"
+condition_val = X["Set"] == "val"
+train_indices = index[condition_train]
+test_indices = index[condition_test]
+val_indices = index[condition_val]
+
+X = X.drop('Set',1)
+
+#print(X)
+#Scale features
+scaler=StandardScaler()
+scaler.fit(X)
+scaled_data=scaler.transform(X)
+scaled_dataframe = pd.DataFrame(scaled_data,columns=X.columns)
+
+#print(scaled_dataframe)
+# 75-25 train vs test split
+
+print(train_indices)
+print(test_indices)
+print(val_indices)
+
+x_train = scaled_dataframe.iloc[train_indices]
+x_test = scaled_dataframe.iloc[test_indices]
+x_val = scaled_dataframe.iloc[val_indices]
+
+y_train = y[train_indices]
+y_test = y[test_indices]
+y_val = y[val_indices]
+
+print(x_train)
+print(y_train)
+
+print(x_test)
+print(y_test)
+
+
+
+
+
 
 
 ##### Logistic Regression #####
