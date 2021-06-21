@@ -127,8 +127,6 @@ if __name__ == '__main__':
         print(cm)
         print('Got %d / %d correct (%.2f)' % (correct, total, 100 * acc))
         wandb.log({'val_acc': val_bal_accuracy})
-        wandb.log({"conf_mat" : wandb.plot.confusion_matrix(probs=None,
-                        y_true=labels_list, preds=predicted_list)})
 
 
 
@@ -141,7 +139,7 @@ if __name__ == '__main__':
 
 
 
-    for epoch in range(10):  # loop over the dataset multiple times
+    for epoch in range(100):  # loop over the dataset multiple times
 
         epochs_data={'i_batch':[],'loss':[],'accuracy':[]}
 
