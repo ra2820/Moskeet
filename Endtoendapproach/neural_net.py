@@ -18,6 +18,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 import wandb
+import time
 
 class Net(nn.Module):
 
@@ -93,7 +94,6 @@ if __name__ == '__main__':
         predicted_list=[]
         with torch.no_grad():
             for batch in loader:
-                print('Calculating accuracy on validation batch ...')
                 inputs, labels = batch['channel_arrays'],batch['species']
 
                 if inputs.shape == (100,2,2000): 
@@ -127,6 +127,8 @@ if __name__ == '__main__':
         print(cm)
         print('Got %d / %d correct (%.2f)' % (correct, total, 100 * acc))
         wandb.log({'val_acc': val_bal_accuracy})
+        wandb.log({"conf_mat" : wandb.plot.confusion_matrix(probs=None,
+                        y_true=labels_list, preds=predicted_list)})
 
 
 
@@ -144,9 +146,11 @@ if __name__ == '__main__':
         epochs_data={'i_batch':[],'loss':[],'accuracy':[]}
 
         running_loss = 0.0
-
+        step_1 = time.perf_counter()
         for i_batch, sample_batch in enumerate(dataloader_mbn.dataloader_train,0):
-    
+            
+            if i_batch == 0:
+                step_2 = time.perf_counter()
             inputs, labels = sample_batch['channel_arrays'],sample_batch['species']
 
         
@@ -159,7 +163,11 @@ if __name__ == '__main__':
                 inputs = inputs.reshape(56,1,2,2000)
 
             outputs = net(inputs.to(device))
-        
+
+            if i_batch == 0:
+                step_3 = time.perf_counter()
+
+            
             labels = torch.flatten(labels)
             labels = labels.type(torch.LongTensor)
 
@@ -168,6 +176,12 @@ if __name__ == '__main__':
 
             optimizer.step()
 
+            if i_batch == 0:
+                step_4 = time.perf_counter()
+
+                print(f'Time to load batch {step_2 - step_1:0.4f}')
+                print(f'Time to pass batch through network {step_3 - step_2:0.4f}')
+                print(f'Time to backprop + update {step_4 - step_3:0.4f}')
             running_loss += loss.item()
     
             if i_batch % 10 == 9:    
