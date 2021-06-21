@@ -420,8 +420,3 @@ valid_sampler = SubsetRandomSampler(val_indices)
 dataloader_train = DataLoader(mbn_dataset, batch_size=100,sampler = train_sampler,num_workers=0)
 dataloader_test = DataLoader(mbn_dataset, batch_size=100,sampler = test_sampler, num_workers=0)
 dataloader_val = DataLoader(mbn_dataset, batch_size=100,sampler = valid_sampler, num_workers=0)
-
-
-
-
-

@@ -1,3 +1,9 @@
+# project specific
+hc_env/
+*.out
+cnn_training/
+wandb/
+log.csv
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
