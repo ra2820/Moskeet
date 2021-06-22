@@ -1,6 +1,6 @@
-
 import dataloader_mbn
-
+import pandas as pd
+import seaborn as sns
 
 import torch
 import torch.nn as nn
@@ -12,13 +12,23 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import balanced_accuracy_score,confusion_matrix
 from torch.optim.optimizer import Optimizer
 import numpy as np
-
+from torch.utils.data.sampler import SubsetRandomSampler
+from torch.utils.data import Dataset, DataLoader
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from sklearn.preprocessing import LabelEncoder
+from sklearn.utils import class_weight
 
 import wandb
 import time
+
+
+
+
+
+
+
 
 class Net(nn.Module):
 
@@ -44,7 +54,54 @@ class Net(nn.Module):
         #x= F.softmax(x)
         return x
 
+
+
 if __name__ == '__main__':
+
+    # Create dataloader and calculate weights
+
+
+
+    mbn_dataset = dataloader_mbn.MBN(csv_file_path='/vol/bitbucket/ra2820/BITBUCKET/combined_split_vol.csv')
+
+
+    df = pd.read_csv('/vol/bitbucket/ra2820/BITBUCKET/combined_split_vol.csv')
+
+
+    y = df['Species']
+    values = np.array(y)
+    label_encoder = LabelEncoder()
+    integer_encoded = label_encoder.fit_transform(values)
+    integer_mapping = {l: i for i, l in enumerate(label_encoder.classes_)}
+    class_weights=class_weight.compute_class_weight(class_weight='balanced',classes=np.unique(integer_encoded),y=integer_encoded)
+    class_weights=torch.tensor(class_weights,dtype=torch.float).cuda()
+
+    index = df.index
+    condition_train = df["Set"] == "train"
+    condition_test = df["Set"] == "test"
+    condition_val = df["Set"] == "val"
+    train_indices = index[condition_train]
+    test_indices = index[condition_test]
+    val_indices = index[condition_val]
+
+
+    train_sampler = SubsetRandomSampler(train_indices)
+    test_sampler = SubsetRandomSampler(test_indices)
+    valid_sampler = SubsetRandomSampler(val_indices)
+
+
+    dataloader_train = DataLoader(mbn_dataset, batch_size=100,sampler = train_sampler,num_workers=6)
+    dataloader_test = DataLoader(mbn_dataset, batch_size=100,sampler = test_sampler, num_workers=6)
+    dataloader_val = DataLoader(mbn_dataset, batch_size=100,sampler = valid_sampler, num_workers=6)
+
+        
+    x_axis_labels = list(label_encoder.classes_) # labels for x-axis
+    y_axis_labels = list(label_encoder.classes_)
+
+
+
+
+    # Create net
 
     import wandb
     wandb.init(entity='mosquito', project='Preliminary Analysis')
@@ -60,7 +117,7 @@ if __name__ == '__main__':
     params = list(net.parameters())
 
 
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss(weight=class_weights,reduction='mean')
     #optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9) #change to Adam
     optimizer = optim.Adam(net.parameters(),lr=lr)
 
@@ -80,6 +137,17 @@ if __name__ == '__main__':
     print('Using device:', device)
 
     net.to(device)
+
+
+    def plot_confusion(ys, y_hts):
+        confusion_array = confusion_matrix(ys, y_hts)
+        df_cm = pd.DataFrame(confusion_array, index = x_axis_labels,
+                    columns = y_axis_labels)
+        fig, ax = plt.subplots(figsize = (10,15))
+        ax = sns.heatmap(df_cm, annot=True)
+        ax.set_xlabel('Predictions')
+        ax.set_ylabel('Actual')
+        return fig
 
 
     val_accuracies = []
@@ -125,6 +193,9 @@ if __name__ == '__main__':
         #bal_acc = balanced_accuracy_score(y_test,y_pred)
         cm = confusion_matrix(np.array(labels_list), np.array(predicted_list))
         print(cm)
+        fig = plot_confusion(np.array(labels_list), np.array(predicted_list))
+        fig.savefig('experiment.png')
+        wandb.log({"img": [wandb.Image(fig, caption="Confusion matrix")]})
         print('Got %d / %d correct (%.2f)' % (correct, total, 100 * acc))
         wandb.log({'val_acc': val_bal_accuracy})
 
@@ -145,7 +216,7 @@ if __name__ == '__main__':
 
         running_loss = 0.0
         step_1 = time.perf_counter()
-        for i_batch, sample_batch in enumerate(dataloader_mbn.dataloader_train,0):
+        for i_batch, sample_batch in enumerate(dataloader_train,0):
             
             if i_batch == 0:
                 step_2 = time.perf_counter()
@@ -205,7 +276,7 @@ if __name__ == '__main__':
         epochs_data_final['epoch_accuracy'].append(epochs_data['accuracy'])
 
         if epoch % 1 ==0: 
-            check_accuracy(dataloader_mbn.dataloader_val,net)
+            check_accuracy(dataloader_val,net)
     
 
 
@@ -228,38 +299,26 @@ if __name__ == '__main__':
 
 """
 epochs_data_final= {'epoch':[], 'epoch_i_batch':[], 'epoch_loss':[], 'epoch_accuracy':[]}
-
-
-
 for epoch in range(10):  # loop over the dataset multiple times
-
     epochs_data={'i_batch':[],'loss':[],'accuracy':[]}
-
     running_loss = 0.0
-
     for i_batch, sample_batch in enumerate(dataloader_mbn.dataloader_train,0):
  
         inputs, labels = sample_batch['channel_arrays'],sample_batch['species']
-
      
         optimizer.zero_grad()
-
         if inputs.shape == (100,2,2000): 
             inputs = inputs.reshape(100,1,2,2000)
         
         else: 
             inputs = inputs.reshape(56,1,2,2000)
-
         outputs = net(inputs)
     
         labels = torch.flatten(labels)
         labels = labels.type(torch.LongTensor)
-
         loss = criterion(outputs, labels)
         loss.backward()
-
         optimizer.step()
-
         running_loss += loss.item()
  
         if i_batch % 10 == 9:    
@@ -268,7 +327,6 @@ for epoch in range(10):  # loop over the dataset multiple times
          
             accuracy = balanced_accuracy_score(labels.detach().numpy(),predicted.detach().numpy())
             
-
             print('[%d, %5d] loss: %.3f accuracy: %.3f' %
                   (epoch + 1, i_batch + 1, running_loss / 10, accuracy))
             
@@ -282,30 +340,20 @@ for epoch in range(10):  # loop over the dataset multiple times
     epochs_data_final['epoch_i_batch'].append(epochs_data['i_batch'])
     epochs_data_final['epoch_loss'].append(epochs_data['loss'])
     epochs_data_final['epoch_accuracy'].append(epochs_data['accuracy'])
-
     if epoch % 5 ==4: 
         check_accuracy(dataloader_mbn.dataloader_val,net)
    
-
-
-
-
-
-
        
 print('Finished Training')
 print(epochs_data_final)
-
 plt.plot(epochs_data['i_batch'],epochs_data['loss'])
 plt.title('1 Epoch - Loss vs. batches')
 plt.xlabel('Batch number')
 plt.ylabel('Loss')
 plt.show()
-
 plt.plot(epochs_data['i_batch'],epochs_data['accuracy'])
 plt.title('1 Epoch - accuracy vs. batches')
 plt.xlabel('Batch number')
 plt.ylabel('accuracy')
 plt.show()
-
 """

@@ -8,7 +8,6 @@ import pandas as pd
 from torch.utils.data.sampler import SubsetRandomSampler
 import librosa
 import datetime
-from pydub import AudioSegment
 import os
 from scipy.signal import find_peaks
 from sklearn.preprocessing import OneHotEncoder
@@ -396,27 +395,29 @@ class MBN(Dataset):
         return sample
 
 
+if __name__ == '__main__':
+    mbn_dataset = MBN(csv_file_path='/vol/bitbucket/ra2820/BITBUCKET/combined_split_vol.csv')
 
 
-mbn_dataset = MBN(csv_file_path='/vol/bitbucket/ra2820/BITBUCKET/combined_split_vol.csv')
+    df = pd.read_csv('/vol/bitbucket/ra2820/BITBUCKET/combined_split_vol.csv')
+    index = df.index
+    condition_train = df["Set"] == "train"
+    condition_test = df["Set"] == "test"
+    condition_val = df["Set"] == "val"
+    train_indices = index[condition_train]
+    test_indices = index[condition_test]
+    val_indices = index[condition_val]
 
 
-df = pd.read_csv('/vol/bitbucket/ra2820/BITBUCKET/combined_split_vol.csv')
-
-index = df.index
-condition_train = df["Set"] == "train"
-condition_test = df["Set"] == "test"
-condition_val = df["Set"] == "val"
-train_indices = index[condition_train]
-test_indices = index[condition_test]
-val_indices = index[condition_val]
+    train_sampler = SubsetRandomSampler(train_indices)
+    test_sampler = SubsetRandomSampler(test_indices)
+    valid_sampler = SubsetRandomSampler(val_indices)
 
 
-train_sampler = SubsetRandomSampler(train_indices)
-test_sampler = SubsetRandomSampler(test_indices)
-valid_sampler = SubsetRandomSampler(val_indices)
+    dataloader_train = DataLoader(mbn_dataset, batch_size=100,sampler = train_sampler,num_workers=6)
+    dataloader_test = DataLoader(mbn_dataset, batch_size=100,sampler = test_sampler, num_workers=6)
+    dataloader_val = DataLoader(mbn_dataset, batch_size=100,sampler = valid_sampler, num_workers=6)
 
 
-dataloader_train = DataLoader(mbn_dataset, batch_size=100,sampler = train_sampler,num_workers=0)
-dataloader_test = DataLoader(mbn_dataset, batch_size=100,sampler = test_sampler, num_workers=0)
-dataloader_val = DataLoader(mbn_dataset, batch_size=100,sampler = valid_sampler, num_workers=0)
+
+
