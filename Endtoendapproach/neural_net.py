@@ -58,6 +58,20 @@ class Net(nn.Module):
 
 if __name__ == '__main__':
 
+    import wandb
+
+    config_defaults = {
+        'epochs': 200,
+        'batch_size': 100,
+        'learning_rate': 0.0002,
+        'optimizer': 'adam',
+    }
+
+    wandb.init(entity='mosquito', project='Preliminary Analysis',config=config_defaults)
+    config = wandb.config
+
+    wandb.log({'config': config})
+
     # Create dataloader and calculate weights
 
 
@@ -90,9 +104,9 @@ if __name__ == '__main__':
     valid_sampler = SubsetRandomSampler(val_indices)
 
 
-    dataloader_train = DataLoader(mbn_dataset, batch_size=100,sampler = train_sampler,num_workers=6)
-    dataloader_test = DataLoader(mbn_dataset, batch_size=100,sampler = test_sampler, num_workers=6)
-    dataloader_val = DataLoader(mbn_dataset, batch_size=100,sampler = valid_sampler, num_workers=6)
+    dataloader_train = DataLoader(mbn_dataset, batch_size=config.batch_size,sampler = train_sampler,num_workers=6)
+    dataloader_test = DataLoader(mbn_dataset, batch_size=config.batch_size,sampler = test_sampler, num_workers=6)
+    dataloader_val = DataLoader(mbn_dataset, batch_size=config.batch_size,sampler = valid_sampler, num_workers=6)
 
         
     x_axis_labels = list(label_encoder.classes_) # labels for x-axis
@@ -103,23 +117,21 @@ if __name__ == '__main__':
 
     # Create net
 
-    import wandb
-    wandb.init(entity='mosquito', project='Preliminary Analysis')
+    
+
     net = Net()
     wandb.watch(net)
     print(net)
-        
-
-    # hyperparameters 
-    batch_size = 100
-    lr = 0.0002
+    
 
     params = list(net.parameters())
 
 
     criterion = nn.CrossEntropyLoss(weight=class_weights,reduction='mean')
     #optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9) #change to Adam
-    optimizer = optim.Adam(net.parameters(),lr=lr)
+    if config.optimizer=='adam':
+      optimizer = optim.Adam(net.parameters(),lr=config.learning_rate)
+   
 
 
 
@@ -210,7 +222,7 @@ if __name__ == '__main__':
 
 
 
-    for epoch in range(100):  # loop over the dataset multiple times
+    for epoch in range(config.epochs):  # loop over the dataset multiple times
 
         epochs_data={'i_batch':[],'loss':[],'accuracy':[]}
 
