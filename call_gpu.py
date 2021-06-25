@@ -57,7 +57,7 @@ with open(description_file, 'w') as ds:
 #Make submission file
 
 job_file = os.path.join(input_path, f"{case_number}.sh")
-file_to_run = 'python /vol/bitbucket/hgc19/mosquito/Moskeet/Endtoendapproach/neural_net.py' # swap main.py with your script
+file_to_run = 'python /vol/bitbucket/hgc19/mosquito/Moskeet/Endtoendapproach/main.py' # swap main.py with your script
 with open(job_file, 'w') as fh:
 
     fh.writelines("#!/bin/bash\n")

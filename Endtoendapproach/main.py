@@ -1,4 +1,7 @@
-import argpars
+import argparse
+import sys
+import os
+import json
 
 import dataloader_mbn
 from neural_net import Net
@@ -35,7 +38,7 @@ def parse_args():
 
     if len(sys.argv) == 1:
         print('using txt')
-        with open(os.getcwd()+'Endtoendapproach/args.txt', 'r') as f:
+        with open(os.getcwd()+'/Endtoendapproach/args.txt', 'r') as f:
             args = argparse.Namespace(**json.loads(f.read()))
     else:
         print('not using txt')
@@ -43,62 +46,62 @@ def parse_args():
     
     return args
                         
- def plot_confusion(ys, y_hts):
-        confusion_array = confusion_matrix(ys, y_hts)
-        df_cm = pd.DataFrame(confusion_array, index = x_axis_labels,
-                    columns = y_axis_labels)
-        fig, ax = plt.subplots(figsize = (10,15))
-        ax = sns.heatmap(df_cm, annot=True)
-        ax.set_xlabel('Predictions')
-        ax.set_ylabel('Actual')
-        return fig
+def plot_confusion(ys, y_hts):
+    confusion_array = confusion_matrix(ys, y_hts)
+    df_cm = pd.DataFrame(confusion_array, index = x_axis_labels,
+                columns = y_axis_labels)
+    fig, ax = plt.subplots(figsize = (10,15))
+    ax = sns.heatmap(df_cm, annot=True)
+    ax.set_xlabel('Predictions')
+    ax.set_ylabel('Actual')
+    return fig
 
 def check_accuracy(loader, model):
-        # function for test accuracy on validation and test set
+    # function for test accuracy on validation and test set
 
-        correct = 0
-        total = 0
-        model.eval()  # set model to evaluation mode 
-        labels_list=[]
-        predicted_list=[]
-        with torch.no_grad():
-            for batch in loader:
-                inputs, labels = batch['channel_arrays'],batch['species']
+    correct = 0
+    total = 0
+    model.eval()  # set model to evaluation mode 
+    labels_list=[]
+    predicted_list=[]
+    with torch.no_grad():
+        for batch in loader:
+            inputs, labels = batch['channel_arrays'],batch['species']
 
-                if inputs.shape == (100,2,2000): 
-                    inputs = inputs.reshape(100,1,2,2000)
-                
-                else: 
-                    inputs = inputs.reshape(82,1,2,2000)
+            if inputs.shape == (100,2,2000): 
+                inputs = inputs.reshape(100,1,2,2000)
+            
+            else: 
+                inputs = inputs.reshape(82,1,2,2000)
 
-                #print(inputs)
+            #print(inputs)
 
-                labels = torch.flatten(labels)
-                labels = labels.type(torch.LongTensor)
-                outputs_val = net(inputs.to(device))
-                #print(outputs_val)
+            labels = torch.flatten(labels)
+            labels = labels.type(torch.LongTensor)
+            outputs_val = net(inputs.to(device))
+            #print(outputs_val)
 
-                _, predicted = torch.max(outputs_val.data, 1)
-                #print(predicted)
-                #print(labels)
-                correct += (predicted.cpu() == labels).sum().item()
-                total += labels.size(0)
+            _, predicted = torch.max(outputs_val.data, 1)
+            #print(predicted)
+            #print(labels)
+            correct += (predicted.cpu() == labels).sum().item()
+            total += labels.size(0)
 
-                for item in predicted.squeeze().tolist(): 
-                    predicted_list.append(item)
-                for item in labels.squeeze().tolist(): 
-                    labels_list.append(item)
-        val_bal_accuracy = balanced_accuracy_score(labels_list, predicted_list)        
-        acc = float(correct) / total
-        val_accuracies.append(acc)
-        #bal_acc = balanced_accuracy_score(y_test,y_pred)
-        cm = confusion_matrix(np.array(labels_list), np.array(predicted_list))
-        print(cm)
-        fig = plot_confusion(np.array(labels_list), np.array(predicted_list))
-        fig.savefig('experiment.png')
-        wandb.log({"img": [wandb.Image(fig, caption="Confusion matrix")]})
-        print('Got %d / %d correct (%.2f)' % (correct, total, 100 * acc))
-        wandb.log({'val_acc': val_bal_accuracy})
+            for item in predicted.squeeze().tolist(): 
+                predicted_list.append(item)
+            for item in labels.squeeze().tolist(): 
+                labels_list.append(item)
+    val_bal_accuracy = balanced_accuracy_score(labels_list, predicted_list)        
+    acc = float(correct) / total
+    val_accuracies.append(acc)
+    #bal_acc = balanced_accuracy_score(y_test,y_pred)
+    cm = confusion_matrix(np.array(labels_list), np.array(predicted_list))
+    print(cm)
+    fig = plot_confusion(np.array(labels_list), np.array(predicted_list))
+    fig.savefig('experiment.png')
+    wandb.log({"img": [wandb.Image(fig, caption="Confusion matrix")]})
+    print('Got %d / %d correct (%.2f)' % (correct, total, 100 * acc))
+    wandb.log({'val_acc': val_bal_accuracy})
 
 
 
@@ -162,7 +165,7 @@ if __name__ == '__main__':
 
 
     criterion = nn.CrossEntropyLoss(weight=class_weights,reduction='mean')
-    optimizer = optim.Adam(net.parameters(),lr=ars.lr)
+    optimizer = optim.Adam(net.parameters(),lr=args.lr)
 
 
 
