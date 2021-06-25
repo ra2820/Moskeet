@@ -4,6 +4,8 @@ hc_env/
 cnn_training/
 wandb/
 log.csv
+*.png
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
