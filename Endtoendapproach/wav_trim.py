@@ -302,7 +302,7 @@ def MbnFile(filename):
 
 df = pd.read_csv('/vol/bitbucket/ra2820/BITBUCKET/combined_split_vol.csv')
 
-for file_path in df['Path']:
+for file_path in df['NewPath_vol2']:
     print(file_path)
     MbnFile(file_path)
     wav1_file_name = os.path.basename(file_path)[:8]+'_Ch0'+'.wav'
