@@ -50,7 +50,7 @@ def plot_confusion(ys, y_hts):
     confusion_array = confusion_matrix(ys, y_hts)
     df_cm = pd.DataFrame(confusion_array, index = x_axis_labels,
                 columns = y_axis_labels)
-    fig, ax = plt.subplots(figsize = (10,15))
+    fig, ax = plt.subplots(figsize = (10,10))
     ax = sns.heatmap(df_cm, annot=True)
     ax.set_xlabel('Predictions')
     ax.set_ylabel('Actual')
