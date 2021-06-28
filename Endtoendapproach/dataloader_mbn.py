@@ -337,6 +337,8 @@ class MBN(Dataset):
     def __getitem__(self, idx):
 
         file_path = self.mbn_files_data['NewPath_vol2'][idx]
+
+        """
        
         #MBN.MbnFile(file_path)
         wav1_file_name = os.path.basename(file_path)[:8]+'_Ch0'+'.wav'
@@ -368,9 +370,9 @@ class MBN(Dataset):
             if highest_peak_x - 1000 <0: 
                 left_index = 0
                 right_index = 2000
-            elif highest_peak_x + 1000 >4416: 
-                right_index= 4416
-                left_index = 4416-2000
+            elif highest_peak_x + 1000 >len(y_trim): 
+                right_index= len(y_trim)
+                left_index = len(y_trim)-2000
             else: 
                 left_index = int(highest_peak_x-1000)
                 right_index = int(highest_peak_x+1000)
@@ -379,7 +381,18 @@ class MBN(Dataset):
             y_trim = y_trim[left_index:right_index]
 
             trimmed_y.append(y_trim)
-
+        
+        """
+        name_1 = os.path.basename(file_path)[:8] + '_trim1.wav'
+        name_2 = os.path.basename(file_path)[:8] + '_trim2.wav'
+        path_1 = os.path.join(os.path.split(file_path)[0],name_1)
+        path_2 = os.path.join(os.path.split(file_path)[0],name_2)
+        
+        
+        
+        
+        wav_trim_1,sr1 = librosa.load(path_1)
+        wav_trim_2,sr2 = librosa.load(path_2)
         
         species = self.mbn_files_data['Species'][idx]
         #print(species)
@@ -388,7 +401,7 @@ class MBN(Dataset):
         set = self.mbn_files_data['Set'][idx]
         #print(trimmed_y)
         #sample = {'wav_tensor': [wav1_tensor,wav2_tensor], 'species': species, 'set':set}
-        sample = {'file_path' : file_path,'channel_arrays': np.stack((trimmed_y[0],trimmed_y[1])), 'species': torch.tensor(species_encoded), 'set':set}
+        sample = {'file_path' : file_path,'channel_arrays': np.stack((wav_trim_1,wav_trim_2)), 'species': torch.tensor(species_encoded), 'set':set}
 
         #sample = {'mbn_tensor': mbn_tensor, 'species': species, 'set':set}
 
