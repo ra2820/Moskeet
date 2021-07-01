@@ -30,10 +30,10 @@ import time
 
 
 
-class Net(nn.Module):
+class SmallNet(nn.Module):
 
     def __init__(self):
-        super(Net, self).__init__()
+        super(SmallNet, self).__init__()
         # 2,2 kernel
         self.conv1 = nn.Conv2d(1, 6, (2,3))
         self.conv2 = nn.Conv2d(6, 10, (1,3))
@@ -54,6 +54,69 @@ class Net(nn.Module):
         #x= F.softmax(x)
         return x
 
+class MediumNet(nn.Module):
+
+    def __init__(self):
+        super(MediumNet, self).__init__()
+        # 2,2 kernel
+        self.conv1 = nn.Conv2d(1, 32, (2,3))
+        self.conv2 = nn.Conv2d(32, 64, (1,3))
+        self.conv3 = nn.Conv2d(64, 64, (1,3))
+        self.conv4 = nn.Conv2d(64, 32, (1,3))
+        self.conv5 = nn.Conv2d(32, 16, (1,3))
+        self.fc1 = nn.Linear(112, 84) 
+        self.fc2 = nn.Linear(84, 28)
+
+    def forward(self, x):
+        # Max pooling over a (1, 2) window
+        x = F.max_pool2d(F.relu(self.conv1(x)), (1, 3))
+    
+        x = F.max_pool2d(F.relu(self.conv2(x)), (1,3))
+        x = F.max_pool2d(F.relu(self.conv3(x)), (1,3))
+        x = F.max_pool2d(F.relu(self.conv4(x)), (1,3))
+        x = F.max_pool2d(F.relu(self.conv5(x)), (1,3))
+        x = torch.flatten(x, 1) # flatten all dimensions except the batch dimension
+      
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)
+        #x= F.softmax(x)
+        return x
+
+
+class LargeNet(nn.Module):
+
+    def __init__(self):
+        super(LargeNet, self).__init__()
+        # 2,2 kernel
+        self.conv1 = nn.Conv2d(1, 32, (2,3))
+        self.conv2 = nn.Conv2d(32, 64, (1,3))
+        self.conv3 = nn.Conv2d(64, 128, (1,3))
+        self.conv4 = nn.Conv2d(128, 256, (1,3))
+        self.conv5 = nn.Conv2d(256, 512, (1,3), padding=(0,1))
+        self.conv6 = nn.Conv2d(512, 256, (1,3), padding=(0,1))
+        self.conv7 = nn.Conv2d(256, 128, (1,3), padding=(0,1))
+        self.conv8 = nn.Conv2d(128, 64, (1,3), padding=(0,1))
+        self.conv9 = nn.Conv2d(64, 16, (1,3))
+        self.fc1 = nn.Linear(112, 84) 
+        self.fc2 = nn.Linear(84, 28)
+
+    def forward(self, x):
+        # Max pooling over a (1, 2) window
+        x = F.max_pool2d(F.relu(self.conv1(x)), (1, 3))
+    
+        x = F.max_pool2d(F.relu(self.conv2(x)), (1,3))
+        x = F.max_pool2d(F.relu(self.conv3(x)), (1,3))
+        x = F.max_pool2d(F.relu(self.conv4(x)), (1,3))
+        x = F.relu(self.conv5(x))
+        x = F.relu(self.conv6(x))
+        x = F.relu(self.conv7(x))
+        x = F.relu(self.conv8(x))
+        x = F.max_pool2d(F.relu(self.conv9(x)), (1,3))
+        x = torch.flatten(x, 1) # flatten all dimensions except the batch dimension
+      
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)
+        return x
 
 
 if __name__ == '__main__':

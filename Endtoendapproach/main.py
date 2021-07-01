@@ -4,7 +4,6 @@ import os
 import json
 
 import dataloader_mbn
-from neural_net import Net
 import pandas as pd
 import seaborn as sns
 
@@ -34,8 +33,9 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Mosquito Classifier')
     parser.add_argument('--lr', type=float, help='learning rate', default=0.0002)
     parser.add_argument('--batch_size', type=int, help='number of instances to pass through network', default=100)
-    parser.add_argument('--epochs', type=int, help='number of epochs to train', default=100)
-
+    parser.add_argument('--epochs', type=int, help='number of epochs to train', default=1000)
+    parser.add_argument('--model', type=str, help='which model to load', default='small')
+    parser.add_argument('--weighted_loss', type=bool, help='Do you want to apply a weighted loss?', default=False)
     if len(sys.argv) == 1:
         print('using txt')
         with open(os.getcwd()+'/Endtoendapproach/args.txt', 'r') as f:
@@ -104,7 +104,24 @@ def check_accuracy(loader, model):
     wandb.log({'val_acc': val_bal_accuracy})
 
 
+def get_model(args):
 
+    '''
+    Loads the correct model
+    '''
+    if args.model == 'small':
+        from neural_net import SmallNet as Net
+    elif args.model == 'medium':
+        from neural_net import MediumNet as Net
+    elif args.model == 'large':
+        from neural_net import LargeNet as Net
+    elif args.model == 'huge':
+        from neural_net import HugeNet as Net
+    else:
+        raise ValueError('This model is not implemented')
+    net = Net()
+
+    return net
 
 
 
@@ -114,8 +131,9 @@ if __name__ == '__main__':
     import wandb
 
     args = parse_args()
+    print(args)
     wandb.init(entity='mosquito', project='Preliminary Analysis', config=args)
-    net = Net()
+    net = get_model(args)
     wandb.watch(net)
     print(net)
    # Create dataloader and calculate weights
@@ -164,7 +182,8 @@ if __name__ == '__main__':
     params = list(net.parameters())
 
 
-    criterion = nn.CrossEntropyLoss(weight=class_weights,reduction='mean')
+    criterion = nn.CrossEntropyLoss(weight=class_weights if args.weighted_loss else None,
+                                    reduction='mean')
     optimizer = optim.Adam(net.parameters(),lr=args.lr)
 
 
