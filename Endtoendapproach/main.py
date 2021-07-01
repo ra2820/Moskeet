@@ -47,6 +47,7 @@ def parse_args():
     parser.add_argument('--model', type=str, help='which model to load', default='small')
     parser.add_argument('--weighted_loss', type=str2bool, help='Do you want to apply a weighted loss?', default=False)
     parser.add_argument('--batch_norm', type=str2bool, help='Do you want to apply batchnorm?', default=False)
+    parser.add_argument('--leaky_relu', type=str2bool, help='Do you want to use a leaky relu?', default=False)
     if len(sys.argv) == 1:
         print('using txt')
         with open(os.getcwd()+'/Endtoendapproach/args.txt', 'r') as f:
@@ -78,23 +79,11 @@ def check_accuracy(loader, model):
     with torch.no_grad():
         for batch in loader:
             inputs, labels = batch['channel_arrays'],batch['species']
-
-            if inputs.shape == (100,2,2000): 
-                inputs = inputs.reshape(100,1,2,2000)
-            
-            else: 
-                inputs = inputs.reshape(82,1,2,2000)
-
-            #print(inputs)
-
+            inputs = torch.unsqueeze(inputs, 1)
             labels = torch.flatten(labels)
             labels = labels.type(torch.LongTensor)
             outputs_val = net(inputs.to(device))
-            #print(outputs_val)
-
             _, predicted = torch.max(outputs_val.data, 1)
-            #print(predicted)
-            #print(labels)
             correct += (predicted.cpu() == labels).sum().item()
             total += labels.size(0)
 
@@ -114,6 +103,8 @@ def check_accuracy(loader, model):
     print('Got %d / %d correct (%.2f)' % (correct, total, 100 * acc))
     wandb.log({'val_acc': val_bal_accuracy})
 
+    return val_bal_accuracy
+
 
 def get_model(args):
 
@@ -130,11 +121,32 @@ def get_model(args):
         from neural_net import HugeNet as Net
     else:
         raise ValueError('This model is not implemented')
-    net = Net()
+    net = Net(batch_norm=args.batch_norm, leaky_relu=args.leaky_relu)
 
     return net
 
+class EarlyStopping():
 
+    def __init__(self, patience=5):
+        self.patience = patience
+        self.current_best = 0
+        self.iter_since_best = 0
+
+    def __call__(self, val_accuracy):
+        if self.current_best  >= val_accuracy:
+            self.iter_since_best += 1
+            print('Stagnating iterations since best:', self.iter_since_best) 
+        else:
+            self.iter_since_best = 0
+            self.current_best = val_accuracy
+
+        if self.iter_since_best > self.patience:
+            print('*'*20)
+            print('Early Stopping')
+            print('*'*20)
+            return True
+        else:
+            return False
 
 
 if __name__ == '__main__':
@@ -220,7 +232,7 @@ if __name__ == '__main__':
 
     ##### TRAINING ####
     epochs_data_final= {'epoch':[], 'epoch_i_batch':[], 'epoch_loss':[], 'epoch_accuracy':[]}
-
+    early_stopping = EarlyStopping()
 
     for epoch in range(args.epochs):  # loop over the dataset multiple times
 
@@ -236,13 +248,7 @@ if __name__ == '__main__':
 
         
             optimizer.zero_grad()
-
-            if inputs.shape == (100,2,2000): 
-                inputs = inputs.reshape(100,1,2,2000)
-            
-            else: 
-                inputs = inputs.reshape(56,1,2,2000)
-
+            inputs = torch.unsqueeze(inputs, 1)
             outputs = net(inputs.to(device))
 
             if i_batch == 0:
@@ -286,8 +292,11 @@ if __name__ == '__main__':
         epochs_data_final['epoch_accuracy'].append(epochs_data['accuracy'])
 
         if epoch % 5 ==0: 
-            check_accuracy(dataloader_val,net)
-    
+            val_acc = check_accuracy(dataloader_val,net)
+            if early_stopping(val_acc):
+                break
+            else:
+                continue
 
 
         

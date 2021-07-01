@@ -19,5 +19,6 @@ parameters:
   batch_norm:
     values: [False, True]
   batch_size:
-    min: 100
-    max: 500
+    values: [100, 200, 300, 400, 500]
+  leaky_relu:
+    values: [False, True]
