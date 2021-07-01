@@ -28,6 +28,16 @@ from sklearn.utils import class_weight
 import wandb
 import time
 
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Mosquito Classifier')
@@ -35,7 +45,8 @@ def parse_args():
     parser.add_argument('--batch_size', type=int, help='number of instances to pass through network', default=100)
     parser.add_argument('--epochs', type=int, help='number of epochs to train', default=1000)
     parser.add_argument('--model', type=str, help='which model to load', default='small')
-    parser.add_argument('--weighted_loss', type=bool, help='Do you want to apply a weighted loss?', default=False)
+    parser.add_argument('--weighted_loss', type=str2bool, help='Do you want to apply a weighted loss?', default=False)
+    parser.add_argument('--batch_norm', type=str2bool, help='Do you want to apply batchnorm?', default=False)
     if len(sys.argv) == 1:
         print('using txt')
         with open(os.getcwd()+'/Endtoendapproach/args.txt', 'r') as f:
