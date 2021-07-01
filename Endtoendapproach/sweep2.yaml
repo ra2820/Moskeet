@@ -1,0 +1,24 @@
+program: Endtoendapproach/main.py 
+command:
+  - ${interpreter}
+  - ${program}
+  - ${args}
+method: bayes
+metric:
+  name: val_acc
+  goal: maximize
+parameters:
+  lr:
+    distribution: log_uniform
+    min: -11.5
+    max: -7.60 
+  model:
+    values: ['small', 'medium', 'large']
+  weighted_loss:
+    values: [False, True]
+  batch_norm:
+    values: [False, True]
+  batch_size:
+    values: [100, 200, 300, 400, 500]
+  leaky_relu:
+    values: [False, True]

@@ -4,7 +4,6 @@ import os
 import json
 
 import dataloader_mbn
-from neural_net import Net
 import pandas as pd
 import seaborn as sns
 
@@ -29,13 +28,26 @@ from sklearn.utils import class_weight
 import wandb
 import time
 
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Mosquito Classifier')
     parser.add_argument('--lr', type=float, help='learning rate', default=0.0002)
     parser.add_argument('--batch_size', type=int, help='number of instances to pass through network', default=100)
-    parser.add_argument('--epochs', type=int, help='number of epochs to train', default=100)
-
+    parser.add_argument('--epochs', type=int, help='number of epochs to train', default=1000)
+    parser.add_argument('--model', type=str, help='which model to load', default='small')
+    parser.add_argument('--weighted_loss', type=str2bool, help='Do you want to apply a weighted loss?', default=False)
+    parser.add_argument('--batch_norm', type=str2bool, help='Do you want to apply batchnorm?', default=False)
+    parser.add_argument('--leaky_relu', type=str2bool, help='Do you want to use a leaky relu?', default=False)
     if len(sys.argv) == 1:
         print('using txt')
         with open(os.getcwd()+'/Endtoendapproach/args.txt', 'r') as f:
@@ -50,7 +62,7 @@ def plot_confusion(ys, y_hts):
     confusion_array = confusion_matrix(ys, y_hts)
     df_cm = pd.DataFrame(confusion_array, index = x_axis_labels,
                 columns = y_axis_labels)
-    fig, ax = plt.subplots(figsize = (10,15))
+    fig, ax = plt.subplots(figsize = (10,10))
     ax = sns.heatmap(df_cm, annot=True)
     ax.set_xlabel('Predictions')
     ax.set_ylabel('Actual')
@@ -67,23 +79,11 @@ def check_accuracy(loader, model):
     with torch.no_grad():
         for batch in loader:
             inputs, labels = batch['channel_arrays'],batch['species']
-
-            if inputs.shape == (100,2,2000): 
-                inputs = inputs.reshape(100,1,2,2000)
-            
-            else: 
-                inputs = inputs.reshape(82,1,2,2000)
-
-            #print(inputs)
-
+            inputs = torch.unsqueeze(inputs, 1)
             labels = torch.flatten(labels)
             labels = labels.type(torch.LongTensor)
             outputs_val = net(inputs.to(device))
-            #print(outputs_val)
-
             _, predicted = torch.max(outputs_val.data, 1)
-            #print(predicted)
-            #print(labels)
             correct += (predicted.cpu() == labels).sum().item()
             total += labels.size(0)
 
@@ -103,10 +103,50 @@ def check_accuracy(loader, model):
     print('Got %d / %d correct (%.2f)' % (correct, total, 100 * acc))
     wandb.log({'val_acc': val_bal_accuracy})
 
+    return val_bal_accuracy
 
 
+def get_model(args):
 
+    '''
+    Loads the correct model
+    '''
+    if args.model == 'small':
+        from neural_net import SmallNet as Net
+    elif args.model == 'medium':
+        from neural_net import MediumNet as Net
+    elif args.model == 'large':
+        from neural_net import LargeNet as Net
+    elif args.model == 'huge':
+        from neural_net import HugeNet as Net
+    else:
+        raise ValueError('This model is not implemented')
+    net = Net(batch_norm=args.batch_norm, leaky_relu=args.leaky_relu)
 
+    return net
+
+class EarlyStopping():
+
+    def __init__(self, patience=5):
+        self.patience = patience
+        self.current_best = 0
+        self.iter_since_best = 0
+
+    def __call__(self, val_accuracy):
+        if self.current_best  >= val_accuracy:
+            self.iter_since_best += 1
+            print('Stagnating iterations since best:', self.iter_since_best) 
+        else:
+            self.iter_since_best = 0
+            self.current_best = val_accuracy
+
+        if self.iter_since_best > self.patience:
+            print('*'*20)
+            print('Early Stopping')
+            print('*'*20)
+            return True
+        else:
+            return False
 
 
 if __name__ == '__main__':
@@ -114,8 +154,9 @@ if __name__ == '__main__':
     import wandb
 
     args = parse_args()
+    print(args)
     wandb.init(entity='mosquito', project='Preliminary Analysis', config=args)
-    net = Net()
+    net = get_model(args)
     wandb.watch(net)
     print(net)
    # Create dataloader and calculate weights
@@ -164,7 +205,8 @@ if __name__ == '__main__':
     params = list(net.parameters())
 
 
-    criterion = nn.CrossEntropyLoss(weight=class_weights,reduction='mean')
+    criterion = nn.CrossEntropyLoss(weight=class_weights if args.weighted_loss else None,
+                                    reduction='mean')
     optimizer = optim.Adam(net.parameters(),lr=args.lr)
 
 
@@ -190,7 +232,7 @@ if __name__ == '__main__':
 
     ##### TRAINING ####
     epochs_data_final= {'epoch':[], 'epoch_i_batch':[], 'epoch_loss':[], 'epoch_accuracy':[]}
-
+    early_stopping = EarlyStopping()
 
     for epoch in range(args.epochs):  # loop over the dataset multiple times
 
@@ -206,13 +248,7 @@ if __name__ == '__main__':
 
         
             optimizer.zero_grad()
-
-            if inputs.shape == (100,2,2000): 
-                inputs = inputs.reshape(100,1,2,2000)
-            
-            else: 
-                inputs = inputs.reshape(56,1,2,2000)
-
+            inputs = torch.unsqueeze(inputs, 1)
             outputs = net(inputs.to(device))
 
             if i_batch == 0:
@@ -256,8 +292,11 @@ if __name__ == '__main__':
         epochs_data_final['epoch_accuracy'].append(epochs_data['accuracy'])
 
         if epoch % 5 ==0: 
-            check_accuracy(dataloader_val,net)
-    
+            val_acc = check_accuracy(dataloader_val,net)
+            if early_stopping(val_acc):
+                break
+            else:
+                continue
 
 
         
