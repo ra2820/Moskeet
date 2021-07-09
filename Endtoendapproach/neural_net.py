@@ -164,6 +164,58 @@ class LargeNet(nn.Module):
         x = self.fc2(x)
         return x
 
+class HugeNet(nn.Module):
+
+    def __init__(self, batch_norm=False, leaky_relu=False):
+        super(HugeNet, self).__init__()
+        self.leaky_relu = leaky_relu
+        self.main = nn.Sequential(
+                nn.Conv2d(1, 64, (2,3)),
+                nn.BatchNorm2d(64) if batch_norm else DoesNothing(),
+                nn.ReLU() if not self.leaky_relu else nn.LeakyReLU(0.2, inplace=True),
+                nn.MaxPool2d((1,3)),
+                nn.Conv2d(64, 128, (1,3)),
+                nn.BatchNorm2d(128) if batch_norm else DoesNothing(),
+                nn.ReLU() if not self.leaky_relu else nn.LeakyReLU(0.2, inplace=True),
+                nn.MaxPool2d((1,3)),
+                nn.Conv2d(128, 128, (1,3)),
+                nn.BatchNorm2d(128) if batch_norm else DoesNothing(),
+                nn.ReLU() if not self.leaky_relu else nn.LeakyReLU(0.2, inplace=True),
+                nn.MaxPool2d((1,3)),
+                nn.Conv2d(128, 256, (1,3)),
+                nn.BatchNorm2d(256) if batch_norm else DoesNothing(),
+                nn.ReLU() if not self.leaky_relu else nn.LeakyReLU(0.2, inplace=True),
+                nn.MaxPool2d((1,3)),
+                nn.Conv2d(256, 512, (1,3), padding=(0,1)),
+                nn.BatchNorm2d(512) if batch_norm else DoesNothing(),
+                nn.ReLU() if not self.leaky_relu else nn.LeakyReLU(0.2, inplace=True),
+                nn.Conv2d(512, 256, (1,3), padding=(0,1)),
+                nn.BatchNorm2d(256) if batch_norm else DoesNothing(),
+                nn.ReLU() if not self.leaky_relu else nn.LeakyReLU(0.2, inplace=True),
+                nn.Conv2d(256, 128, (1,3), padding=(0,1)),
+                nn.BatchNorm2d(128) if batch_norm else DoesNothing(),
+                nn.ReLU() if not self.leaky_relu else nn.LeakyReLU(0.2, inplace=True),
+                nn.Conv2d(128, 64, (1,3), padding=(0,1)),
+                nn.BatchNorm2d(64) if batch_norm else DoesNothing(),
+                nn.ReLU() if not self.leaky_relu else nn.LeakyReLU(0.2, inplace=True),
+                nn.Conv2d(64, 16, (1,3)),
+                nn.BatchNorm2d(16) if batch_norm else DoesNothing(),
+                nn.ReLU() if not self.leaky_relu else nn.LeakyReLU(0.2, inplace=True),
+                nn.MaxPool2d((1,3)),
+                )
+
+
+        self.fc1 = nn.Linear(112, 84) 
+        self.fc2 = nn.Linear(84, 28)
+        self.activation = nn.ReLU() if not self.leaky_relu else nn.LeakyReLU(0.2, inplace=True)
+
+    def forward(self, x):
+        x = self.main(x)
+        x = torch.flatten(x, 1) # flatten all dimensions except the batch dimension
+      
+        x = self.activation(self.fc1(x))
+        x = self.fc2(x)
+        return x
 
 if __name__ == '__main__':
 
