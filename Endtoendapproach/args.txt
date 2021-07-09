@@ -5,6 +5,8 @@
     "epochs": 1000,
     "model": "large",
     "weighted_loss": true,
-    "batch_norm: true,
-    "leaky_relu": true
+    "batch_norm": true,
+    "leaky_relu": true,
+    "data_aug_noise": 0.00008,
+    "data_aug_msk":200
 }

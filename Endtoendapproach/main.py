@@ -48,6 +48,8 @@ def parse_args():
     parser.add_argument('--weighted_loss', type=str2bool, help='Do you want to apply a weighted loss?', default=False)
     parser.add_argument('--batch_norm', type=str2bool, help='Do you want to apply batchnorm?', default=False)
     parser.add_argument('--leaky_relu', type=str2bool, help='Do you want to use a leaky relu?', default=False)
+    parser.add_argument('--data_aug_noise', type=float, help='Do you want to add noise?', default=0.00008)
+    parser.add_argument('--data_aug_msk', type=int, help='Do you want to add masking?', default=200)
     if len(sys.argv) == 1:
         print('using txt')
         with open(os.getcwd()+'/Endtoendapproach/args.txt', 'r') as f:
@@ -163,7 +165,8 @@ if __name__ == '__main__':
     torch.manual_seed(0)
     np.random.seed(0)
 
-    mbn_dataset = dataloader_mbn.MBN(csv_file_path='/vol/bitbucket/ra2820/BITBUCKET/combined_split_vol.csv')
+    mbn_dataset_train = dataloader_mbn.MBN(csv_file_path='/vol/bitbucket/ra2820/BITBUCKET/combined_split_vol.csv', data_aug_noise=args.data_aug_noise, data_aug_msk=args.data_aug_msk, data_aug=True)
+    mbn_dataset_val = dataloader_mbn.MBN(csv_file_path='/vol/bitbucket/ra2820/BITBUCKET/combined_split_vol.csv', data_aug_noise=0, data_aug_msk=0, data_aug=False)
 
 
     df = pd.read_csv('/vol/bitbucket/ra2820/BITBUCKET/combined_split_vol.csv')
@@ -192,9 +195,9 @@ if __name__ == '__main__':
     valid_sampler = SubsetRandomSampler(val_indices)
 
 
-    dataloader_train = DataLoader(mbn_dataset, batch_size=args.batch_size, sampler=train_sampler, num_workers=4)
-    dataloader_test = DataLoader(mbn_dataset, batch_size=args.batch_size, sampler=test_sampler, num_workers=4)
-    dataloader_val = DataLoader(mbn_dataset, batch_size=args.batch_size, sampler=valid_sampler, num_workers=4)
+    dataloader_train = DataLoader(mbn_dataset_train, batch_size=args.batch_size, sampler=train_sampler, num_workers=4)
+    #dataloader_test = DataLoader(mbn_dataset, batch_size=args.batch_size, sampler=test_sampler, num_workers=4)
+    dataloader_val = DataLoader(mbn_dataset_val, batch_size=args.batch_size, sampler=valid_sampler, num_workers=4)
 
         
     x_axis_labels = list(label_encoder.classes_) # labels for x-axis
