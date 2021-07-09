@@ -12,7 +12,7 @@ import os
 from scipy.signal import find_peaks
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import LabelEncoder
-
+import random
 
 
 
@@ -133,7 +133,7 @@ def fillHeader():
 class MBN(Dataset):
     """MBN dataset."""
 
-    def __init__(self, csv_file_path):
+    def __init__(self, csv_file_path, data_aug_noise=0.00008, data_aug_msk=200, data_aug = True):
         """
         Args:
             csv_file (string): Path to the csv file with train/val/test splits.
@@ -142,6 +142,9 @@ class MBN(Dataset):
         self.mbn_files_data = pd.read_csv(csv_file_path)
         species = self.mbn_files_data['Species']
         values = np.array(species)
+        self.data_aug = data_aug
+        self.data_aug_noise = data_aug_noise
+        self.data_aug_msk = data_aug_msk
         #print(values)
         # integer encode
         label_encoder = LabelEncoder()
@@ -338,51 +341,10 @@ class MBN(Dataset):
 
         file_path = self.mbn_files_data['NewPath_vol2'][idx]
 
-        """
+        
        
         #MBN.MbnFile(file_path)
-        wav1_file_name = os.path.basename(file_path)[:8]+'_Ch0'+'.wav'
-        wav2_file_name = os.path.basename(file_path)[:8]+'_Ch1'+'.wav'
-        wav1_path = os.path.join(os.path.split(file_path)[0],wav1_file_name)
-        wav2_path = os.path.join(os.path.split(file_path)[0],wav2_file_name)
-        y1,sr1 = librosa.load(wav1_path)
-        y2,sr2 = librosa.load(wav2_path)
-        y1_trim = y1[50:-50]
-        y2_trim = y2[50:-50]
-
-        trimmed_y = []
-
-        for y_trim in (y1_trim,y2_trim): 
-            peaks,properties = find_peaks(-y_trim,distance=500)
-            y_values=[]
-
-            for item in peaks: 
-                y_value = -y_trim[item]
-                y_values.append(y_value)
-
-            x_y_list = list(zip(peaks,y_values))
-            sorted_list = sorted(x_y_list, key=lambda x: x[1])
-    
-            highest_peak_x = sorted_list[-1][0]
-            highest_peak_y = sorted_list[-1][1]
-            
-
-            if highest_peak_x - 1000 <0: 
-                left_index = 0
-                right_index = 2000
-            elif highest_peak_x + 1000 >len(y_trim): 
-                right_index= len(y_trim)
-                left_index = len(y_trim)-2000
-            else: 
-                left_index = int(highest_peak_x-1000)
-                right_index = int(highest_peak_x+1000)
-
-            #print(left_index,right_index)
-            y_trim = y_trim[left_index:right_index]
-
-            trimmed_y.append(y_trim)
-        
-        """
+      
         name_1 = os.path.basename(file_path)[:8] + '_trim1.wav'
         name_2 = os.path.basename(file_path)[:8] + '_trim2.wav'
         path_1 = os.path.join(os.path.split(file_path)[0],name_1)
@@ -393,9 +355,57 @@ class MBN(Dataset):
         
         wav_trim_1,sr1 = librosa.load(path_1)
         wav_trim_2,sr2 = librosa.load(path_2)
+
+
+        for id,y_trim in enumerate((wav_trim_1,wav_trim_2)): 
+            peaks,properties = find_peaks(-y_trim,distance=500)
+            y_values=[]
+
+            for item in peaks: 
+                y_value = -y_trim[item]
+                y_values.append(y_value)
+
+            x_y_list = list(zip(peaks,y_values))
+            sorted_list = sorted(x_y_list, key=lambda x: x[1])
+    
+ 
+            highest_peak_y = sorted_list[-1][1]
+            lowest_peak_y = sorted_list[0][1]
+            peak_height = highest_peak_y - lowest_peak_y
+
         
-        species = self.mbn_files_data['Species'][idx]
-        #print(species)
+            
+            file_changed = 0
+            if peak_height < 0.0001:
+                
+                if id ==0:
+
+                    wav_trim_1 = wav_trim_2
+                    file_changed +=1
+
+                elif id ==1:
+                    wav_trim_2 = wav_trim_1
+                    file_changed +=1
+        
+
+        if self.data_aug:
+            noise_1=np.random.normal(0, self.data_aug_noise, wav_trim_1.shape[0])
+            noise_2=np.random.normal(0, self.data_aug_noise, wav_trim_2.shape[0])
+            
+            wav_trim_1 = wav_trim_1 + noise_1
+            wav_trim_2 = wav_trim_2 + noise_2
+    
+            value = random.randint(0,1999)
+            if value + self.data_aug_msk <= 1999:
+                upper_value = value+self.data_aug_msk
+                wav_trim_1[value:upper_value] = 0
+                wav_trim_2[value:upper_value] = 0
+            else: 
+                lower_value = value-self.data_aug_msk
+                wav_trim_1[lower_value:value] = 0
+                wav_trim_2[lower_value:value] = 0    
+                
+   
         species_encoded = self.integer_encoded[idx]
         #print(species_encoded)
         set = self.mbn_files_data['Set'][idx]

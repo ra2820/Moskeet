@@ -1,0 +1,17 @@
+program: Endtoendapproach/main.py 
+command:
+  - ${interpreter}
+  - ${program}
+  - ${args}
+method: bayes
+metric:
+  name: val_acc
+  goal: maximize
+parameters:
+  data_aug_noise:
+    values: [0, 0.00005, 0.00008, 0.00009]
+  data_aug_msk:
+    values: [0, 200, 500, 700]
+
+
+
