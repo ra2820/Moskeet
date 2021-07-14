@@ -50,6 +50,7 @@ def parse_args():
     parser.add_argument('--leaky_relu', type=str2bool, help='Do you want to use a leaky relu?', default=False)
     parser.add_argument('--data_aug_noise', type=float, help='Do you want to add noise?', default=0.00008)
     parser.add_argument('--data_aug_msk', type=int, help='Do you want to add masking?', default=200)
+    parser.add_argument('--loss', type=str, help="What type of loss?", default="sklearn")
     if len(sys.argv) == 1:
         print('using txt')
         with open(os.getcwd()+'/Endtoendapproach/args.txt', 'r') as f:
@@ -84,7 +85,7 @@ def check_accuracy(loader, model):
             inputs = torch.unsqueeze(inputs, 1)
             labels = torch.flatten(labels)
             labels = labels.type(torch.LongTensor)
-            outputs_val = net(inputs.to(device))
+            outputs_val = net(inputs.float().to(device))
             _, predicted = torch.max(outputs_val.data, 1)
             correct += (predicted.cpu() == labels).sum().item()
             total += labels.size(0)
@@ -157,7 +158,7 @@ if __name__ == '__main__':
 
     args = parse_args()
     print(args)
-    wandb.init(entity='mosquito', project='Preliminary Analysis', config=args)
+    wandb.init(entity='mosquito', project='Secondary approaches', config=args)
     net = get_model(args)
     wandb.watch(net)
     print(net)
@@ -165,18 +166,30 @@ if __name__ == '__main__':
     torch.manual_seed(0)
     np.random.seed(0)
 
-    mbn_dataset_train = dataloader_mbn.MBN(csv_file_path='/vol/bitbucket/ra2820/BITBUCKET/combined_split_vol.csv', data_aug_noise=args.data_aug_noise, data_aug_msk=args.data_aug_msk, data_aug=True)
-    mbn_dataset_val = dataloader_mbn.MBN(csv_file_path='/vol/bitbucket/ra2820/BITBUCKET/combined_split_vol.csv', data_aug_noise=0, data_aug_msk=0, data_aug=False)
+    mbn_dataset_train = dataloader_mbn.MBN(csv_file_path='/vol/bitbucket/ra2820/Moskeet3/Moskeet/Endtoendapproach/combined_split_vol.csv', data_aug_noise=args.data_aug_noise, data_aug_msk=args.data_aug_msk, data_aug=True)
+    mbn_dataset_val = dataloader_mbn.MBN(csv_file_path='/vol/bitbucket/ra2820/Moskeet3/Moskeet/Endtoendapproach/combined_split_vol.csv', data_aug_noise=0, data_aug_msk=0, data_aug=False)
 
 
-    df = pd.read_csv('/vol/bitbucket/ra2820/BITBUCKET/combined_split_vol.csv')
+    df = pd.read_csv('/vol/bitbucket/ra2820/Moskeet3/Moskeet/Endtoendapproach/combined_split_vol.csv')
 
 
     y = df['Species']
     values = np.array(y)
     label_encoder = LabelEncoder()
     integer_encoded = label_encoder.fit_transform(values)
-    class_weights=class_weight.compute_class_weight(class_weight='balanced',classes=np.unique(integer_encoded),y=integer_encoded)
+    if args.loss == "sklearn": 
+        class_weights=class_weight.compute_class_weight(class_weight='balanced',classes=np.unique(integer_encoded),y=integer_encoded)
+    elif args.loss == "inverse":
+        weights = 1/np.bincount(integer_encoded)
+        class_weights = weights/np.sum(weights)*len(np.unique(integer_encoded))
+    elif args.loss == "inverse_square":
+        weights = 1/np.sqrt(np.bincount(integer_encoded))
+        class_weights = weights/np.sum(weights)*len(np.unique(integer_encoded))
+    elif args.loss =="ens":
+        beta = 0.99
+        weights = (1 - beta)/(1 - np.power(beta,np.bincount(integer_encoded)))
+        class_weights = weights/np.sum(weights)*len(np.unique(integer_encoded))
+
     class_weights=torch.tensor(class_weights,dtype=torch.float).cuda()
     print(f'integer_encoded {integer_encoded}')
     print(f'class_weights {class_weights}')
@@ -252,7 +265,7 @@ if __name__ == '__main__':
         
             optimizer.zero_grad()
             inputs = torch.unsqueeze(inputs, 1)
-            outputs = net(inputs.to(device))
+            outputs = net(inputs.float().to(device))
 
             if i_batch == 0:
                 step_3 = time.perf_counter()

@@ -13,7 +13,7 @@ from scipy.signal import find_peaks
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import LabelEncoder
 import random
-
+import time
 
 
 
@@ -352,51 +352,28 @@ class MBN(Dataset):
         
         
         
-        
+        step_1 = time.perf_counter()
         wav_trim_1,sr1 = librosa.load(path_1)
         wav_trim_2,sr2 = librosa.load(path_2)
-
-
-        for id,y_trim in enumerate((wav_trim_1,wav_trim_2)): 
-            peaks,properties = find_peaks(-y_trim,distance=500)
-            y_values=[]
-
-            for item in peaks: 
-                y_value = -y_trim[item]
-                y_values.append(y_value)
-
-            x_y_list = list(zip(peaks,y_values))
-            sorted_list = sorted(x_y_list, key=lambda x: x[1])
-    
- 
-            highest_peak_y = sorted_list[-1][1]
-            lowest_peak_y = sorted_list[0][1]
-            peak_height = highest_peak_y - lowest_peak_y
-
-        
-            
-            file_changed = 0
-            if peak_height < 0.0001:
-                
-                if id ==0:
-
-                    wav_trim_1 = wav_trim_2
-                    file_changed +=1
-
-                elif id ==1:
-                    wav_trim_2 = wav_trim_1
-                    file_changed +=1
-        
-
+        step_2 = time.perf_counter()
+        #print(f'Time to load trimmed files : {step_2 - step_1:0.4f}')
+        step_3 = time.perf_counter()
         if self.data_aug:
+            step_4 = time.perf_counter()
             noise_1=np.random.normal(0, self.data_aug_noise, wav_trim_1.shape[0])
             noise_2=np.random.normal(0, self.data_aug_noise, wav_trim_2.shape[0])
+            step_5 = time.perf_counter()
             
+            #print(f'Time to get noise :{step_5 - step_4:0.5f}')
+
             wav_trim_1 = wav_trim_1 + noise_1
             wav_trim_2 = wav_trim_2 + noise_2
     
             value = random.randint(0,1999)
+
+            step_6 = time.perf_counter()
             if value + self.data_aug_msk <= 1999:
+
                 upper_value = value+self.data_aug_msk
                 wav_trim_1[value:upper_value] = 0
                 wav_trim_2[value:upper_value] = 0
@@ -404,8 +381,12 @@ class MBN(Dataset):
                 lower_value = value-self.data_aug_msk
                 wav_trim_1[lower_value:value] = 0
                 wav_trim_2[lower_value:value] = 0    
-                
-   
+            step_7 = time.perf_counter()    
+            
+            #print(f'Time to apply masking: {step_6 - step_5:0.4f}')
+        step_8 = time.perf_counter()
+        
+        #print(f'Time to go through entire if loop:{step_8 - step_3:0.4f}')
         species_encoded = self.integer_encoded[idx]
         #print(species_encoded)
         set = self.mbn_files_data['Set'][idx]

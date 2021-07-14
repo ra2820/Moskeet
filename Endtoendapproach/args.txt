@@ -1,12 +1,13 @@
 
 {
-    "lr": 0.0001,
+    "lr": 0.0000719,
     "batch_size": 100,
     "epochs": 1000,
-    "model": "large",
+    "model": "huge",
     "weighted_loss": true,
     "batch_norm": true,
     "leaky_relu": true,
-    "data_aug_noise": 0.00008,
-    "data_aug_msk":200
+    "data_aug_noise": 0.000163,
+    "data_aug_msk":45,
+    "loss": "inverse"
 }
