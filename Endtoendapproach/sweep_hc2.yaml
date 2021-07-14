@@ -28,3 +28,5 @@ parameters:
   data_aug_msk:
     min: 0
     max: 1000
+  loss:
+    values: ['sklearn', 'inverse', 'inverse_square', 'ens']
