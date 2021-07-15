@@ -116,15 +116,31 @@ def get_model(args):
     '''
     if args.model == 'small':
         from neural_net import SmallNet as Net
+        net = Net(batch_norm=args.batch_norm, leaky_relu=args.leaky_relu)
     elif args.model == 'medium':
         from neural_net import MediumNet as Net
+        net = Net(batch_norm = args.batch_norm, leaky_relu=args.leaky_relu)
     elif args.model == 'large':
         from neural_net import LargeNet as Net
+        net = Net(batch_norm=args.batch_norm, leaky_relu=args.leaky_relu)
     elif args.model == 'huge':
+    
         from neural_net import HugeNet as Net
+        net = Net(batch_norm = args.batch_norm, leaky_relu= args.leaky_relu)
+
+    elif args.model == 'resnet18':
+        from resnet import ResNet
+        from resnet import BasicBlock
+        Net = ResNet(BasicBlock, [2,2,2,2])
+    elif args.model == 'resnet50':
+        from resnet import ResNet
+        from resnet import Bottleneck
+        Net = ResNet(Bottleneck, [3,4,6,3])
+
     else:
         raise ValueError('This model is not implemented')
-    net = Net(batch_norm=args.batch_norm, leaky_relu=args.leaky_relu)
+    #net = Net(batch_norm=args.batch_norm, leaky_relu=args.leaky_relu)
+    net = Net
 
     return net
 
@@ -158,7 +174,7 @@ if __name__ == '__main__':
 
     args = parse_args()
     print(args)
-    wandb.init(entity='mosquito', project='Secondary approaches', config=args)
+    wandb.init(entity='mosquito', project='Tertiary approaches', config=args)
     net = get_model(args)
     wandb.watch(net)
     print(net)
