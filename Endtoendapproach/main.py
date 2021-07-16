@@ -116,17 +116,17 @@ def get_model(args):
     '''
     if args.model == 'small':
         from neural_net import SmallNet as Net
-        net = Net(batch_norm=args.batch_norm, leaky_relu=args.leaky_relu)
+        Net = Net(batch_norm=args.batch_norm, leaky_relu=args.leaky_relu)
     elif args.model == 'medium':
         from neural_net import MediumNet as Net
-        net = Net(batch_norm = args.batch_norm, leaky_relu=args.leaky_relu)
+        Net = Net(batch_norm = args.batch_norm, leaky_relu=args.leaky_relu)
     elif args.model == 'large':
         from neural_net import LargeNet as Net
-        net = Net(batch_norm=args.batch_norm, leaky_relu=args.leaky_relu)
+        Net = Net(batch_norm=args.batch_norm, leaky_relu=args.leaky_relu)
     elif args.model == 'huge':
     
         from neural_net import HugeNet as Net
-        net = Net(batch_norm = args.batch_norm, leaky_relu= args.leaky_relu)
+        Net = Net(batch_norm = args.batch_norm, leaky_relu= args.leaky_relu)
 
     elif args.model == 'resnet18':
         from resnet import ResNet
@@ -140,9 +140,8 @@ def get_model(args):
     else:
         raise ValueError('This model is not implemented')
     #net = Net(batch_norm=args.batch_norm, leaky_relu=args.leaky_relu)
-    net = Net
 
-    return net
+    return Net
 
 class EarlyStopping():
 
