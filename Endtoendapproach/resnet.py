@@ -73,7 +73,7 @@ class Bottleneck(nn.Module):
     expansion = 4
 
     def __init__(self, inplanes, planes, stride=1, downsample=None, groups=1,
-                 base_width=64, dilation=1, norm_layer=None):
+                 base_width=64, dilation=1, norm_layer=None):##base width changed to 128 from 64
         super(Bottleneck, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
@@ -114,7 +114,7 @@ class Bottleneck(nn.Module):
 class ResNet(nn.Module):
 
     def __init__(self, block, layers, num_classes=28, zero_init_residual=False, ##num_classes
-                 groups=1, width_per_group=64, replace_stride_with_dilation=None,
+                 groups=1, width_per_group=64, replace_stride_with_dilation=None,##changed width_per group from 64 to 128
                  norm_layer=None):
         super(ResNet, self).__init__()
         if norm_layer is None:
@@ -135,15 +135,15 @@ class ResNet(nn.Module):
         self.bn1 = norm_layer(self.inplanes)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.layer1 = self._make_layer(block, 64, layers[0])
-        self.layer2 = self._make_layer(block, 128, layers[1], stride=2,
+        self.layer1 = self._make_layer(block, 128, layers[0])
+        self.layer2 = self._make_layer(block, 256, layers[1], stride=2,
                                        dilate=replace_stride_with_dilation[0])
-        self.layer3 = self._make_layer(block, 256, layers[2], stride=2,
+        self.layer3 = self._make_layer(block, 512, layers[2], stride=2,
                                        dilate=replace_stride_with_dilation[1])
-        self.layer4 = self._make_layer(block, 512, layers[3], stride=2,
+        self.layer4 = self._make_layer(block, 1024, layers[3], stride=2,
                                        dilate=replace_stride_with_dilation[2])
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(512 * block.expansion, num_classes)
+        self.fc = nn.Linear(700 * block.expansion, num_classes)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
