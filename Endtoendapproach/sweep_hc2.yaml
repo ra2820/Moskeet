@@ -10,7 +10,7 @@ metric:
 parameters:
   lr:
     distribution: log_uniform
-    min: -11.6
+    min: -13.82
     max: -10.12
   model:
     values: ['resnet18', 'resnet50']
@@ -19,7 +19,7 @@ parameters:
   batch_norm:
     values: [True]
   batch_size:
-    values: [100, 200]
+    values: [100]
   leaky_relu:
     values: [False, True]
   data_aug_noise:
