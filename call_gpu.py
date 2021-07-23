@@ -76,7 +76,7 @@ with open(job_file, 'w') as fh:
 
 # if you have no preference on type of GPU
 subprocess.call(
-    f"(. {venv_path}bin/activate && sbatch {job_file})",
+    f"(. {venv_path}bin/activate && sbatch --exclude=sicklebill,kingfisher  {job_file})",
     shell=True)
 
 # use -w name_of_gpu to specify type of gpu you want
