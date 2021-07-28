@@ -1,13 +1,14 @@
 
 {
-    "lr": 0.0000719,
+    "lr": 0.00001151,
     "batch_size": 100,
     "epochs": 1000,
-    "model": "huge",
+    "model": "resnet18",
     "weighted_loss": true,
     "batch_norm": true,
     "leaky_relu": true,
-    "data_aug_noise": 0.000163,
-    "data_aug_msk":45,
-    "loss": "inverse"
+    "data_aug_noise": 0.0000163,
+    "data_aug_msk":350,
+    "loss": "inverse_square",
+    "sr":44100
 }

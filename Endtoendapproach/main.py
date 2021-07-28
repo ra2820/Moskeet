@@ -51,6 +51,7 @@ def parse_args():
     parser.add_argument('--data_aug_noise', type=float, help='Do you want to add noise?', default=0.00008)
     parser.add_argument('--data_aug_msk', type=int, help='Do you want to add masking?', default=200)
     parser.add_argument('--loss', type=str, help="What type of loss?", default="sklearn")
+    parser.add_argument('--sr', type=float, help="sample rate to load audio", default=44100)
     if len(sys.argv) == 1:
         print('using txt')
         with open(os.getcwd()+'/Endtoendapproach/args.txt', 'r') as f:
@@ -186,8 +187,8 @@ if __name__ == '__main__':
     torch.manual_seed(0)
     np.random.seed(0)
 
-    mbn_dataset_train = dataloader_mbn.MBN(csv_file_path='/vol/bitbucket/ra2820/Moskeet3/Moskeet/Endtoendapproach/combined_split_vol.csv', data_aug_noise=args.data_aug_noise, data_aug_msk=args.data_aug_msk, data_aug=True)
-    mbn_dataset_val = dataloader_mbn.MBN(csv_file_path='/vol/bitbucket/ra2820/Moskeet3/Moskeet/Endtoendapproach/combined_split_vol.csv', data_aug_noise=0, data_aug_msk=0, data_aug=False)
+    mbn_dataset_train = dataloader_mbn.MBN(csv_file_path='/vol/bitbucket/ra2820/Moskeet3/Moskeet/Endtoendapproach/combined_split_vol.csv', data_aug_noise=args.data_aug_noise, data_aug_msk=args.data_aug_msk, data_aug=True, sr=args.sr)
+    mbn_dataset_val = dataloader_mbn.MBN(csv_file_path='/vol/bitbucket/ra2820/Moskeet3/Moskeet/Endtoendapproach/combined_split_vol.csv', data_aug_noise=0, data_aug_msk=0, data_aug=False, sr=args.sr)
 
 
     df = pd.read_csv('/vol/bitbucket/ra2820/Moskeet3/Moskeet/Endtoendapproach/combined_split_vol.csv')

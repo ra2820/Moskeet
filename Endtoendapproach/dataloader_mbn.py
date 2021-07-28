@@ -133,7 +133,7 @@ def fillHeader():
 class MBN(Dataset):
     """MBN dataset."""
 
-    def __init__(self, csv_file_path, data_aug_noise=0.00008, data_aug_msk=200, data_aug = True):
+    def __init__(self, csv_file_path, data_aug_noise=0.00008, data_aug_msk=200, data_aug=True, sr=44100):
         """
         Args:
             csv_file (string): Path to the csv file with train/val/test splits.
@@ -149,7 +149,7 @@ class MBN(Dataset):
         # integer encode
         label_encoder = LabelEncoder()
         self.integer_encoded = label_encoder.fit_transform(values)
-        #print(integer_encoded)
+        self.sr = sr
         
         
 
@@ -353,8 +353,8 @@ class MBN(Dataset):
         
         
         step_1 = time.perf_counter()
-        wav_trim_1,sr1 = librosa.load(path_1)
-        wav_trim_2,sr2 = librosa.load(path_2)
+        wav_trim_1,sr1 = librosa.load(path_1, sr=self.sr)
+        wav_trim_2,sr2 = librosa.load(path_2, sr=self.sr)
         step_2 = time.perf_counter()
         #print(f'Time to load trimmed files : {step_2 - step_1:0.4f}')
         step_3 = time.perf_counter()
